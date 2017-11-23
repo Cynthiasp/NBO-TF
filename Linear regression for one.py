@@ -1,232 +1,176 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 1,
-   "metadata": {},
-   "outputs": [
-    {
-     "ename": "IndentationError",
-     "evalue": "unexpected indent (<ipython-input-1-4b64b120a50e>, line 132)",
-     "output_type": "error",
-     "traceback": [
-      "\u001b[0;36m  File \u001b[0;32m\"<ipython-input-1-4b64b120a50e>\"\u001b[0;36m, line \u001b[0;32m132\u001b[0m\n\u001b[0;31m    export_path_base = sys.argv[-1]\u001b[0m\n\u001b[0m    ^\u001b[0m\n\u001b[0;31mIndentationError\u001b[0m\u001b[0;31m:\u001b[0m unexpected indent\n"
-     ]
-    }
-   ],
-   "source": [
-    "from __future__ import absolute_import\n",
-    "from __future__ import division\n",
-    "\n",
-    "from tensorflow.python.saved_model import builder\n",
-    "from tensorflow.python.saved_model import constants\n",
-    "from tensorflow.python.saved_model import loader\n",
-    "from tensorflow.python.saved_model import main_op\n",
-    "from tensorflow.python.saved_model import signature_constants\n",
-    "from tensorflow.python.saved_model import signature_def_utils\n",
-    "from tensorflow.python.saved_model import tag_constants\n",
-    "from tensorflow.python.saved_model import utils\n",
-    "\n",
-    "from __future__ import print_function\n",
-    "import numpy\n",
-    "import matplotlib.pyplot as plt\n",
-    "import tensorflow as tf\n",
-    "\n",
-    "#from tensorflow.python.lib.io import file_io\n",
-    "#from tensorflow.python.saved_model import main_op\n",
-    "\n",
-    "#FLAGS = None\n",
-    "\n",
-    "rng = numpy.random\n",
-    "\n",
-    "#Parametros\n",
-    "learning_rate = 0.01\n",
-    "training_epochs = 1000\n",
-    "display_step = 50\n",
-    "\n",
-    "\n",
-    "#Datos de entrenamiento\n",
-    "train_X = numpy.asarray([8, 8, 3, 3, 3, 8, 3, 5, 3, 0, 0, 0, 2, 2, 0, 3, 5, 5, 3, 5, 0, 0, 3, 0, 8, 3, 2, 2, 2, 3, \n",
-    "                         3, 3, 0, 0, 2, 3, 2, 8, 3, 2, 2, 8, 0, 5, 3, 8, 8, 3, 3, 0, 3, 2, 0, 0, 0, 3, 8, 3, 3, 3,\n",
-    "                         3, 3, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 8, 3, 0, 0, 0, 3, 0, 3, 3, 8, 8, 8, 3,\n",
-    "                         2, 2, 3, 3, 0, 3, 3, 3, 3, 2, 3, 0, 0, 3, 8, 8, 8, 8, 0, 3, 2, 2, 0, 0, 5, 3, 3, 3, 3, 3,\n",
-    "                         3, 3, 3, 3, 0, 8, 8, 0, 0, 0, 3, 8, 3, 2, 0, 3, 3, 3, 0, 2, 3, 0, 3, 3, 3, 3, 3, 0, 3, 0,\n",
-    "                         0, 0, 0, 3, 0, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,\n",
-    "                         0, 0, 0, 0, 0, 0, 0, 2, 8, 0, 0, 8, 0, 8, 0, 0, 0, 8, 2, 5, 0, 0, 0, 8, 0, 0, 2, 3, 2, 3,\n",
-    "                         3, 3, 8, 2, 3, 2, 3, 0, 2, 2, 2, 3, 3, 0, 3, 0, 3, 3, 3, 3, 3, 3, 0, 3, 3, 2, 0, 2, 3, 2,\n",
-    "                         2, 2, 3, 2, 0, 3, 3, 0, 0, 3, 0, 3, 3, 2, 5, 2])\n",
-    "train_Y = numpy.asarray([3, 3, 2, 8, 8, 3, 5, 3, 8, 3, 8, 8, 8, 8, 8, 2, 3, 3, 8, 3, 8, 8, 2, 3, 3, 5, 3, 3, 8, 8,\n",
-    "                         8, 8, 3, 3, 3, 8, 3, 3, 2, 3, 8, 3, 3, 8, 8, 3, 3, 8, 8, 3, 5, 5, 3, 3, 3, 8, 3, 8, 5, 8,\n",
-    "                         5, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 8, 3, 3, 3, 3, 3, 5, 3, 3, 3, 8, 3, 5, 5, 3, 3, 3, 5,\n",
-    "                         3, 3, 2, 8, 8, 8, 8, 2, 5, 8, 8, 8, 8, 5, 3, 3, 3, 3, 8, 2, 8, 3, 8, 8, 3, 8, 5, 8, 8, 8,\n",
-    "                         8, 5, 2, 8, 3, 3, 3, 8, 3, 3, 8, 3, 8, 3, 3, 5, 3, 8, 8, 8, 8, 8, 8, 8, 2, 5, 8, 3, 8, 8,\n",
-    "                         3, 3, 3, 8, 8, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, \n",
-    "                         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5, 5, 5, 5,\n",
-    "                         5, 5, 5, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,\n",
-    "                         8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8])\n",
-    "\n",
-    "n_samples = train_X.shape[0]\n",
-    "\n",
-    "# Entradas de la grafica\n",
-    "X = tf.placeholder(\"float\")\n",
-    "Y = tf.placeholder(\"float\")\n",
-    "\n",
-    "# Pesos del modelo\n",
-    "w = tf.Variable(rng.randn(), name=\"weight\")\n",
-    "b = tf.Variable(rng.randn(), name=\"bias\")\n",
-    "\n",
-    "# Desarrollo del modelo lineal\n",
-    "pred = tf.add(tf.multiply(X, w), b)\n",
-    "\n",
-    "# Error medio cuadrado\n",
-    "product = tf.reduce_sum(tf.pow(pred-Y, 2))/(2*n_samples)\n",
-    "\n",
-    "# Gradiente descendiente\n",
-    "optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(product)\n",
-    "\n",
-    "\n",
-    "# Inicio de variables\n",
-    "init = tf.global_variables_initializer()\n",
-    "\n",
-    "# Inicio de entrenamiento\n",
-    "with tf.Session() as sess:\n",
-    "    \n",
-    "    sess.run(init)\n",
-    "\n",
-    "    for epoch in range(training_epochs):\n",
-    "        for (x, y) in zip(train_X, train_Y):\n",
-    "            sess.run(optimizer, feed_dict={X: x, Y: y})\n",
-    "\n",
-    "        if (epoch+1) % display_step == 0:\n",
-    "            c = sess.run(product, feed_dict={X: train_X, Y:train_Y})\n",
-    "            print(\"Epoch:\", '%04d' % (epoch+1), \"product=\", \"{:.9f}\".format(c), \\\n",
-    "                \"w=\", sess.run(w), \"b=\", sess.run(b))\n",
-    "\n",
-    "    print(\"Optimizacion terminada\")\n",
-    "    training_product = sess.run(product, feed_dict={X: train_X, Y: train_Y})\n",
-    "    print(\"Producto de entrenamiento =\", training_product, \"w=\", sess.run(w), \"b=\", sess.run(b), '\\n')\n",
-    "\n",
-    "    # Grafica\n",
-    "    plt.plot(train_X, train_Y, 'ro', label='Dato Originales')\n",
-    "    plt.plot(train_X, sess.run(w) * train_X + sess.run(b), label='Recta ajustada')\n",
-    "    plt.legend()\n",
-    "    plt.show()\n",
-    "\n",
-    "    # Datos de prueba\n",
-    "    test_X = numpy.asarray([0, 0, 0, 0, 0, 0, 3, 5, 5, 3, 3])\n",
-    "    test_Y = numpy.asarray([8, 8, 3, 3, 3, 3, 2, 3, 3, 8, 5])\n",
-    "\n",
-    "    print(\"Probando\")\n",
-    "    testing_product = sess.run(\n",
-    "        tf.reduce_sum(tf.pow(pred - Y, 2)) / (2 * test_X.shape[0]),\n",
-    "        feed_dict={X: test_X, Y: test_Y})  \n",
-    "    \n",
-    "    print(\"Producto de Prueba =\", testing_product)\n",
-    "    print(\"Diferencia de pérdida cuadrática media absoluta :\", abs(\n",
-    "        training_product - testing_product))\n",
-    "    \n",
-    "    from tensorflow.python.util.all_util import remove_undocumented\n",
-    "\n",
-    "\n",
-    "_allowed_symbols = [\n",
-    "    \"builder\",\n",
-    "    \"constants\",\n",
-    "    \"loader\",\n",
-    "    \"main_op\",\n",
-    "    \"signature_constants\",\n",
-    "    \"signature_def_utils\",\n",
-    "    \"tag_constants\",\n",
-    "    \"utils\",\n",
-    "]\n",
-    "remove_undocumented(__name__, _allowed_symbols) \n",
-    "\n",
-    "    #plt.plot(test_X, test_Y, 'bo', label='Datos de prueba')\n",
-    "    #plt.plot(train_X, sess.run(w) * train_X + sess.run(b), label='Recta ajustada')\n",
-    "    #plt.legend()\n",
-    "    #plt.show()\n",
-    "   \n",
-    "\n",
-    "\n",
-    "#Save the model#\n",
-    "\n",
-    "    export_path_base = sys.argv[-1]\n",
-    "    export_path = os.path.join(\n",
-    "    compat.as_bytes(export_path_base),\n",
-    "    compat.as_bytes(str(FLAGS.model_version)))\n",
-    "    \n",
-    "    print 'Exporting trained model to', export path\n",
-    "    \n",
-    "    builder = saved_model_builder.SavedModelBuilder(export_path)\n",
-    "    \n",
-    "    classification_inputs = utils.build_tensor_info(serialized_tf_example) ####\n",
-    "    classification_outputs_classes = utils.build_tensor_info(prediction_classes)####\n",
-    "    classification_outputs_scores = utils.build_tensor_info(values)####\n",
-    "    \n",
-    "    classification_signature = signature_def_utils.build_signature_def(\n",
-    "        inputs={},\n",
-    "        outputs={},\n",
-    "    methd_name=signature_constants.CLASSIFY_METHOD_NAME)\n",
-    "    \n",
-    "        tensor_info_x = utils.build_tensor_info(x)\n",
-    "        tensor_info_y = utils.build_tensor_info(y)\n",
-    "        \n",
-    "        prediction_signature = signature_def_utils.build_signature_def(\n",
-    "        inputs={'images': tensor_info_x},\n",
-    "        outputs={'scores': tensor_info_y},\n",
-    "        method_name=signature_constants.PREDICT_METHOD_NAME\n",
-    "        )\n",
-    "        \n",
-    "        legacy_init_op = tf.group(tf.tables_initializer(), name='legacy_init_op')\n",
-    "        \n",
-    "        builder.add_meta_graph_and_variables(\n",
-    "        sess, [tag_constants.SERVIN], signature_def_map={\n",
-    "            'predict_images':\n",
-    "            prediction_signature,\n",
-    "            signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:\n",
-    "            classification_signature,\n",
-    "        }\n",
-    "        \n",
-    "        legacy_init_op=legacy_init_op)\n",
-    "        \n",
-    "    builder.save()\n",
-    "    print 'Done exporting'"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  }
- ],
- "metadata": {
-  "anaconda-cloud": {},
-  "kernelspec": {
-   "display_name": "Python 2",
-   "language": "python",
-   "name": "python2"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 2
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython2",
-   "version": "2.7.12"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 2
-}
+from __future__ import absolute_import
+from __future__ import division
+
+from tensorflow.python.saved_model import builder
+from tensorflow.python.saved_model import constants
+from tensorflow.python.saved_model import loader
+from tensorflow.python.saved_model import main_op
+from tensorflow.python.saved_model import signature_constants
+from tensorflow.python.saved_model import signature_def_utils
+from tensorflow.python.saved_model import tag_constants
+from tensorflow.python.saved_model import utils
+
+from __future__ import print_function
+import numpy
+import matplotlib.pyplot as plt
+import tensorflow as tf
+
+#from tensorflow.python.lib.io import file_io
+#from tensorflow.python.saved_model import main_op
+
+#FLAGS = None
+
+rng = numpy.random
+
+#Parametros
+learning_rate = 0.01
+training_epochs = 1000
+display_step = 50
+
+
+#Datos de entrenamiento
+#train_X = numpy.asarray([8, 8, 3, 3, 3, 8, 3, 5, 3, 0, 0, 0, 2, 2, 0, 3, 5, 5, 3, 5, 0, 0, 3, 0, 8, 3, 2, 2, 2, 3, 
+ #                      3, 3, 0, 0, 2, 3, 2, 8, 3, 2, 2, 8, 0, 5, 3, 8, 8, 3, 3, 0, 3, 2, 0, 0, 0, 3, 8, 3, 3, 3,
+ #                      3, 3, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 8, 3, 0, 0, 0, 3, 0, 3, 3, 8, 8, 8, 3,
+ #                      2, 2, 3, 3, 0, 3, 3, 3, 3, 2, 3, 0, 0, 3, 8, 8, 8, 8, 0, 3, 2, 2, 0, 0, 5, 3, 3, 3, 3, 3,
+ #                      3, 3, 3, 3, 0, 8, 8, 0, 0, 0, 3, 8, 3, 2, 0, 3, 3, 3, 0, 2, 3, 0, 3, 3, 3, 3, 3, 0, 3, 0,
+ #                      0, 0, 0, 3, 0, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
+ #                      0, 0, 0, 0, 0, 0, 0, 2, 8, 0, 0, 8, 0, 8, 0, 0, 0, 8, 2, 5, 0, 0, 0, 8, 0, 0, 2, 3, 2, 3,
+ #                      3, 3, 8, 2, 3, 2, 3, 0, 2, 2, 2, 3, 3, 0, 3, 0, 3, 3, 3, 3, 3, 3, 0, 3, 3, 2, 0, 2, 3, 2,
+ #                      2, 2, 3, 2, 0, 3, 3, 0, 0, 3, 0, 3, 3, 2, 5, 2])
+#train_Y = numpy.asarray([3, 3, 2, 8, 8, 3, 5, 3, 8, 3, 8, 8, 8, 8, 8, 2, 3, 3, 8, 3, 8, 8, 2, 3, 3, 5, 3, 3, 8, 8,
+#                         8, 8, 3, 3, 3, 8, 3, 3, 2, 3, 8, 3, 3, 8, 8, 3, 3, 8, 8, 3, 5, 5, 3, 3, 3, 8, 3, 8, 5, 8,
+#                         5, 5, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 8, 3, 3, 3, 3, 3, 5, 3, 3, 3, 8, 3, 5, 5, 3, 3, 3, 5,
+#                         3, 3, 2, 8, 8, 8, 8, 2, 5, 8, 8, 8, 8, 5, 3, 3, 3, 3, 8, 2, 8, 3, 8, 8, 3, 8, 5, 8, 8, 8,
+#                         8, 5, 2, 8, 3, 3, 3, 8, 3, 3, 8, 3, 8, 3, 3, 5, 3, 8, 8, 8, 8, 8, 8, 8, 2, 5, 8, 3, 8, 8,
+#                         3, 3, 3, 8, 8, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 
+#                         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5, 5, 5, 5,
+#                         5, 5, 5, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+#                         8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8])
+
+
+n_samples = train_X.shape[0]
+
+# Entradas de la grafica
+X = tf.placeholder("float")
+Y = tf.placeholder("float")
+
+# Pesos del modelo
+w = tf.Variable(rng.randn(), name="weight")
+b = tf.Variable(rng.randn(), name="bias")
+
+# Desarrollo del modelo lineal
+pred = tf.add(tf.multiply(X, w), b) # y=mx + b
+
+# Error medio cuadrado
+product = tf.reduce_sum(tf.pow(pred-Y, 2))/(2*n_samples)
+
+# Gradiente descendiente
+optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(product)
+
+
+# Inicio de variables
+init = tf.global_variables_initializer()
+
+# Inicio de entrenamiento
+with tf.Session() as sess:
+    
+    sess.run(init)
+
+    for epoch in range(training_epochs):
+        for (x, y) in zip(train_X, train_Y):
+            sess.run(optimizer, feed_dict={X: x, Y: y})
+
+        if (epoch+1) % display_step == 0:
+            c = sess.run(product, feed_dict={X: train_X, Y:train_Y})
+            print("Epoch:", '%04d' % (epoch+1), "product=", "{:.9f}".format(c), \
+                "w=", sess.run(w), "b=", sess.run(b))
+
+    print("Optimizacion terminada")
+    training_product = sess.run(product, feed_dict={X: train_X, Y: train_Y})
+    print("Producto de entrenamiento =", training_product, "w=", sess.run(w), "b=", sess.run(b), '\n')
+
+    # Grafica
+    plt.plot(train_X, train_Y, 'ro', label='Dato Originales')
+    plt.plot(train_X, sess.run(w) * train_X + sess.run(b), label='Recta ajustada')
+    plt.legend()
+    plt.show()
+
+    # Datos de prueba
+    test_X = numpy.asarray([0, 0, 0, 0, 0, 0, 3, 5, 5, 3, 3])
+    test_Y = numpy.asarray([8, 8, 3, 3, 3, 3, 2, 3, 3, 8, 5])
+
+    print("Probando")
+    testing_product = sess.run(
+        tf.reduce_sum(tf.pow(pred - Y, 2)) / (2 * test_X.shape[0]),
+        feed_dict={X: test_X, Y: test_Y})  
+    
+    print("Producto de Prueba =", testing_product)
+    print("Diferencia de pérdida cuadrática media absoluta :", abs(
+        training_product - testing_product))
+    
+    from tensorflow.python.util.all_util import remove_undocumented
+
+
+_allowed_symbols = [
+    "builder",
+    "constants",
+    "loader",
+    "main_op",
+    "signature_constants",
+    "signature_def_utils",
+    "tag_constants",
+    "utils",
+]
+remove_undocumented(__name__, _allowed_symbols) 
+
+    #plt.plot(test_X, test_Y, 'bo', label='Datos de prueba')
+    #plt.plot(train_X, sess.run(w) * train_X + sess.run(b), label='Recta ajustada')
+    #plt.legend()
+    #plt.show()
+   
+
+
+##Save the model#
+
+  #  export_path_base = sys.argv[-1]
+   # export_path = os.path.join(
+    #compat.as_bytes(export_path_base),
+    #compat.as_bytes(str(FLAGS.model_version)))
+    
+   # print 'Exporting trained model to', export path
+    
+   # builder = saved_model_builder.SavedModelBuilder(export_path)
+    
+   # classification_inputs = utils.build_tensor_info(serialized_tf_example) ####
+   # classification_outputs_classes = utils.build_tensor_info(prediction_classes)####
+   # classification_outputs_scores = utils.build_tensor_info(values)####
+    
+   # classification_signature = signature_def_utils.build_signature_def(
+    #    inputs={},
+     #   outputs={},
+   # methd_name=signature_constants.CLASSIFY_METHOD_NAME)
+    
+    #    tensor_info_x = utils.build_tensor_info(x)
+     #   tensor_info_y = utils.build_tensor_info(y)
+        
+      #  prediction_signature = signature_def_utils.build_signature_def(
+       # inputs={'images': tensor_info_x},
+       # outputs={'scores': tensor_info_y},
+       # method_name=signature_constants.PREDICT_METHOD_NAME
+       # )
+        
+      #  legacy_init_op = tf.group(tf.tables_initializer(), name='legacy_init_op')
+        
+       # builder.add_meta_graph_and_variables(
+        #sess, [tag_constants.SERVIN], signature_def_map={
+         #   'predict_images':
+          #  prediction_signature,
+           # signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+            #classification_signature,
+        #}
+        
+        #legacy_init_op=legacy_init_op)
+        
+   # builder.save()
+    #print 'Done exporting'
